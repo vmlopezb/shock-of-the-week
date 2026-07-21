@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shock of the Week</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f1f5f9; color: #1f2937; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .header { background: white; border-bottom: 1px solid #e2e8f0; padding: 20px 0; }
+        .card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; margin-bottom: 20px; }
+        .btn { padding: 12px 20px; border-radius: 6px; font-weight: 500; border: none; cursor: pointer; font-family: inherit; }
+        .btn-primary { background: #ef4444; color: white; }
+        .btn-primary:hover:not(:disabled) { background: #dc2626; }
+        .btn-secondary { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+        input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; margin-bottom: 12px; font-family: inherit; font-size: 14px; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.1); }
+        textarea { resize: vertical; }
+        label { display: block; font-weight: 500; margin-bottom: 8px; color: #374151; font-size: 14px; }
+        h2 { font-size: 28px; font-weight: 600; margin-bottom: 20px; }
+        h3 { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+        .login-box { width: 100%; max-width: 400px; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); margin: 50px auto; }
+        .login-box h1 { font-size: 32px; margin-bottom: 8px; text-align: center; }
+        .stat-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; text-align: center; }
+        .stat-card .label { font-size: 12px; color: #6b7280; text-transform: uppercase; margin-bottom: 8px; }
+        .stat-card .value { font-size: 32px; font-weight: 700; color: #1f2937; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 12px; background: #f3f4f6; color: #374151; }
+        .error { color: #ef4444; font-size: 12px; margin-top: -10px; margin-bottom: 12px; }
+        .success { color: #059669; font-size: 12px; margin-bottom: 12px; }
+        .user-row { padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 8px; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 12px; align-items: center; }
+        .password-strength { height: 4px; background: #e5e7eb; border-radius: 2px; margin-bottom: 8px; }
+        .password-strength.weak { background: #ef4444; }
+        .password-strength.medium { background: #f97316; }
+        .password-strength.strong { background: #10b981; }
+        .feedback-box { padding: 16px; border-left: 4px solid #10b981; background: #f0fdf4; border-radius: 4px; margin-bottom: 16px; }
+        .feedback-box.incorrect { border-left-color: #ef4444; background: #fef2f2; }
+        .comment-box { padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 12px; }
+        .comment-box strong { color: #ef4444; }
+        .img-preview { max-width: 100%; max-height: 300px; border-radius: 6px; margin: 12px 0; }
+        .progress-bar { width: 100%; height: 6px; background: #e5e7eb; border-radius: 3px; margin-bottom: 16px; }
+        .progress-fill { height: 100%; background: #ef4444; border-radius: 3px; }
+        .history-item { padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 8px; cursor: pointer; }
+        .history-item:hover { background: #efefef; }
+        .tab-buttons { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid #e5e7eb; }
+        .tab-btn { padding: 12px 16px; border: none; background: none; cursor: pointer; color: #6b7280; border-bottom: 2px solid transparent; }
+        .tab-btn.active { color: #ef4444; border-bottom-color: #ef4444; }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        let app_state = {
+            user: null,
+            view: 'login',
+            loginTab: 'login',
+            users: [
+                { id: 'admin1', pseudonym: 'Admin', email: 'admin@shockoftheweek.com', password: 'hash_541d932be70c1', hospital: 'h1', pgyLevel: 'PGY-3+', isAdmin: true, createdAt: new Date().toISOString() }
+            ],
+            cases: [
+                {
+                    id: 'demo1',
+                    title: '45M with Chest Pain',
+                    description: 'A classic STEMI presentation',
+                    vignette: '45-year-old male presents with acute substernal chest pain. BP 145/90, HR 102.',
+                    ekg: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200"%3E%3Crect fill="white" width="600" height="200"/%3E%3Cg stroke="%23333" stroke-width="1.5" fill="none"%3E%3Cpath d="M 20 100 L 60 100 L 70 80 L 80 120 L 90 100 L 150 100 L 160 70 L 170 130 L 180 100 L 240 100 L 250 80 L 260 120 L 270 100 L 330 100 L 340 70 L 350 130 L 360 100 L 420 100 L 430 80 L 440 120 L 450 100 L 510 100 L 550 100"/%3E%3C/g%3E%3C/svg%3E',
+                    questions: [
+                        { id: 'q1', type: 'multiple_choice', text: 'Diagnosis?', options: ['Inferior STEMI', 'Anterior STEMI', 'NSTEMI', 'UA'], correct: 'Inferior STEMI', difficulty: 1, explanation: 'ST elevation in inferior leads.', explanationImage: null },
+                        { id: 'q2', type: 'multiple_choice', text: 'Artery?', options: ['LAD', 'RCA', 'LCx', 'LM'], correct: 'RCA', difficulty: 2, explanation: 'RCA supplies inferior wall.', explanationImage: null }
+                    ]
+                }
+            ],
+            users: [],
+            submissions: [],
+            comments: [],
+            adminTab: 'stats',
+            adminStep: 'case',
+            currentQuestionIdx: 0,
+            answers: {},
+            confidences: {},
+            adminForm: { title: '', description: '', vignette: '', ekg: null, ekg_preview: null, questions: [], currentQuestion: { type: 'multiple_choice', text: '', options: ['', '', '', ''], correct: '', difficulty: 1, explanation: '', explanationImage: null } },
+            feedbackData: null,
+            reviewingSubmission: null,
+            registrationError: '',
+            registrationSuccess: ''
+        };
+
+        try {
+            const saved = localStorage.getItem('sowData');
+            if (saved) {
+                const data = JSON.parse(saved);
+                app_state.cases = data.cases || app_state.cases;
+                app_state.users = data.users || app_state.users;
+                app_state.submissions = data.submissions || app_state.submissions;
+                app_state.comments = data.comments || app_state.comments;
+            }
+            // Ensure admin account always exists
+            if (!app_state.users.find(u => u.pseudonym === 'Admin')) {
+                app_state.users.unshift({ id: 'admin1', pseudonym: 'Admin', email: 'admin@shockoftheweek.com', password: 'AdminHash', hospital: 'h1', pgyLevel: 'PGY-3+', isAdmin: true, createdAt: new Date().toISOString() });
+                saveData();
+            }
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                app_state.user = JSON.parse(savedUser);
+                app_state.view = 'dashboard';
+            }
+        } catch (e) {}
+
+        function saveData() {
+            localStorage.setItem('sowData', JSON.stringify({
+                cases: app_state.cases,
+                users: app_state.users,
+                submissions: app_state.submissions,
+                comments: app_state.comments
+            }));
+        }
+
+        function saveUser() {
+            localStorage.setItem('currentUser', JSON.stringify(app_state.user));
+        }
+
+        function hashPassword(pwd) {
+            let hash = 0;
+            for (let i = 0; i < pwd.length; i++) {
+                const char = pwd.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return 'hash_' + Math.abs(hash).toString(16);
+        }
+
+        function validatePassword(pwd) {
+            return pwd.length >= 6;
+        }
+
+        function getPasswordStrength(pwd) {
+            if (pwd.length < 6) return 'weak';
+            if (pwd.length < 10) return 'medium';
+            return 'strong';
+        }
+
+        function validateEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        function updatePasswordStrength() {
+            const pass = document.getElementById('reg-pass').value;
+            const strength = getPasswordStrength(pass);
+            const elem = document.getElementById('strength');
+            if (elem) {
+                elem.className = 'password-strength ' + strength;
+            }
+        }
+
+        function handleLogin() {
+            const username = document.getElementById('login-user').value;
+            const password = document.getElementById('login-pass').value;
+            login(username, password);
+        }
+
+        function handleRegister() {
+            const username = document.getElementById('reg-user').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-pass').value;
+            const hosp = document.getElementById('reg-hosp').value;
+            const pgy = document.getElementById('reg-pgy').value;
+            register(username, email, password, hosp, pgy);
+        }
+
+        function register(username, email, password, hosp, pgy) {
+            app_state.registrationError = '';
+            app_state.registrationSuccess = '';
+
+            console.log('Register attempt:', { username, email, hosp, pgy });
+
+            if (!username || !username.trim()) {
+                app_state.registrationError = 'Username required';
+                render();
+                return;
+            }
+            if (!email || !email.trim()) {
+                app_state.registrationError = 'Email required';
+                render();
+                return;
+            }
+            if (!password || !password.trim()) {
+                app_state.registrationError = 'Password required';
+                render();
+                return;
+            }
+
+            const existingUser = app_state.users.find(u => u.pseudonym.toLowerCase() === username.toLowerCase());
+            if (existingUser) {
+                app_state.registrationError = '❌ Username already taken. Try another.';
+                render();
+                return;
+            }
+
+            if (!validateEmail(email)) {
+                app_state.registrationError = '❌ Invalid email format';
+                render();
+                return;
+            }
+
+            if (!validatePassword(password)) {
+                app_state.registrationError = '❌ Password must be at least 6 characters';
+                render();
+                return;
+            }
+
+            const user = {
+                id: 'u' + Date.now(),
+                pseudonym: username,
+                email: email,
+                password: hashPassword(password),
+                hospital: hosp,
+                pgyLevel: pgy,
+                isAdmin: false,
+                createdAt: new Date().toISOString()
+            };
+
+            app_state.users.push(user);
+            console.log('User created:', user);
+            saveData();
+            
+            app_state.registrationSuccess = '✓ Account created! Now login with your credentials.';
+            app_state.loginTab = 'login';
+            
+            // Clear form
+            setTimeout(() => {
+                render();
+            }, 100);
+        }
+
+        function login(username, password) {
+            app_state.registrationError = '';
+            
+            if (!username || !username.trim()) {
+                app_state.registrationError = 'Username required';
+                render();
+                return;
+            }
+            if (!password || !password.trim()) {
+                app_state.registrationError = 'Password required';
+                render();
+                return;
+            }
+
+            // Special hardcoded admin login
+            if (username === 'Admin' && password === 'Admin123') {
+                const adminUser = app_state.users.find(u => u.pseudonym === 'Admin');
+                if (adminUser) {
+                    adminUser.isAdmin = true;  // ENSURE admin flag is true
+                    app_state.user = adminUser;
+                    app_state.view = 'dashboard';
+                    saveUser();
+                    render();
+                    return;
+                }
+            }
+
+            const user = app_state.users.find(u => u.pseudonym.toLowerCase() === username.toLowerCase());
+            
+            if (!user) {
+                app_state.registrationError = '❌ User not found. Check spelling or register first.';
+                render();
+                return;
+            }
+            if (user.password !== hashPassword(password)) {
+                app_state.registrationError = '❌ Incorrect password';
+                render();
+                return;
+            }
+
+            app_state.user = user;
+            app_state.view = 'dashboard';
+            saveUser();
+            render();
+        }
+
+        function logout() {
+            app_state.user = null;
+            localStorage.removeItem('currentUser');
+            app_state.view = 'login';
+            app_state.loginTab = 'login';
+            app_state.registrationError = '';
+            app_state.registrationSuccess = '';
+            render();
+        }
+
+        function startCase() {
+            if (app_state.user.isAdmin) {
+                alert('Admins cannot take cases');
+                return;
+            }
+            app_state.view = 'case';
+            app_state.currentQuestionIdx = 0;
+            app_state.answers = {};
+            app_state.confidences = {};
+            render();
+        }
+
+        function submitCase(caseId) {
+            const caseObj = app_state.cases.find(c => c.id === caseId);
+            let totalPoints = 0, feedback = [];
+            
+            caseObj.questions.forEach(q => {
+                const isCorrect = app_state.answers[q.id] === q.correct;
+                const conf = app_state.confidences[q.id] || 3;
+                const points = isCorrect ? (100 * q.difficulty) + (conf * 10 * q.difficulty) + 25 : 0;
+                totalPoints += points;
+                feedback.push({
+                    questionText: q.text,
+                    userAnswer: app_state.answers[q.id],
+                    correctAnswer: q.correct,
+                    isCorrect: isCorrect,
+                    explanation: q.explanation,
+                    points: points,
+                    confidence: conf
+                });
+            });
+
+            const submission = {
+                id: 's' + Date.now(),
+                userId: app_state.user.id,
+                caseId: caseId,
+                totalPoints: totalPoints,
+                feedback: feedback,
+                submittedAt: new Date().toISOString()
+            };
+            app_state.submissions.push(submission);
+            app_state.feedbackData = { caseId, caseTitle: caseObj.title, totalPoints, feedback, submissionId: submission.id };
+            app_state.view = 'feedback';
+            saveData();
+            render();
+        }
+
+        function addComment(submissionId, comment) {
+            if (!comment.trim()) return;
+            app_state.comments.push({
+                id: 'c' + Date.now(),
+                submissionId: submissionId,
+                userId: app_state.user.id,
+                text: comment,
+                createdAt: new Date().toISOString()
+            });
+            saveData();
+            render();
+        }
+
+        function render() {
+            const app = document.getElementById('app');
+            const user = app_state.user;
+            const view = app_state.view;
+
+            // LOGIN/REGISTER
+            if (view === 'login') {
+                app.innerHTML = `
+                    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+                        <div class="login-box">
+                            <h1>❤️ Shock of the Week</h1>
+                            <p style="text-align: center; color: #6b7280; margin-bottom: 20px;">Master EKG interpretation</p>
+
+                            <div style="display: flex; gap: 8px; border-bottom: 2px solid #e5e7eb; margin-bottom: 24px;">
+                                <button style="flex: 1; padding: 12px; border: none; background: none; cursor: pointer; color: ${app_state.loginTab === 'login' ? '#ef4444' : '#6b7280'}; border-bottom: 2px solid ${app_state.loginTab === 'login' ? '#ef4444' : 'transparent'};" onclick="app_state.loginTab = 'login'; app_state.registrationError = ''; render();">Login</button>
+                                <button style="flex: 1; padding: 12px; border: none; background: none; cursor: pointer; color: ${app_state.loginTab === 'register' ? '#ef4444' : '#6b7280'}; border-bottom: 2px solid ${app_state.loginTab === 'register' ? '#ef4444' : 'transparent'};" onclick="app_state.loginTab = 'register'; app_state.registrationError = ''; render();">Register</button>
+                            </div>
+
+                            ${app_state.registrationError ? `<div class="error" style="margin-bottom: 12px;">⚠️ ${app_state.registrationError}</div>` : ''}
+                            ${app_state.registrationSuccess ? `<div class="success" style="margin-bottom: 12px;">✓ ${app_state.registrationSuccess}</div>` : ''}
+
+                            ${app_state.loginTab === 'login' ? `
+                                <div style="background: #ecfdf5; padding: 12px; border-radius: 6px; margin-bottom: 16px; font-size: 12px; border-left: 3px solid #10b981;">
+                                    <p style="margin: 0 0 8px 0;"><strong>👤 Admin Account (Pre-created):</strong></p>
+                                    <p style="margin: 0;">Username: <code style="background: white; padding: 2px 6px; border-radius: 3px;">Admin</code></p>
+                                    <p style="margin: 4px 0 0 0;">Password: <code style="background: white; padding: 2px 6px; border-radius: 3px;">Admin123</code></p>
+                                </div>
+                            ` : ''}
+
+                            ${app_state.registrationError ? `<div class="error" style="margin-bottom: 12px;">⚠️ ${app_state.registrationError}</div>` : ''}
+                            ${app_state.registrationSuccess ? `<div class="success" style="margin-bottom: 12px;">✓ ${app_state.registrationSuccess}</div>` : ''}
+
+                            ${app_state.loginTab === 'login' ? `
+                                <label>Username</label>
+                                <input type="text" id="login-user" placeholder="Your username">
+                                <label>Password</label>
+                                <input type="password" id="login-pass" placeholder="Password">
+                                <button class="btn btn-primary" style="width: 100%;" onclick="handleLogin()">Login</button>
+                            ` : `
+                                <label>Username</label>
+                                <input type="text" id="reg-user" placeholder="Choose username">
+                                <label>Email</label>
+                                <input type="email" id="reg-email" placeholder="your@email.com">
+                                <label>Password</label>
+                                <input type="password" id="reg-pass" placeholder="Min 6 characters" oninput="updatePasswordStrength()">
+                                <div id="strength" class="password-strength weak"></div>
+                                <label>Hospital</label>
+                                <select id="reg-hosp">
+                                    <option value="h1">Hospital A</option>
+                                    <option value="h2">Hospital B</option>
+                                    <option value="h3">Hospital C</option>
+                                </select>
+                                <label>PGY Level</label>
+                                <select id="reg-pgy">
+                                    <option>PGY-1</option>
+                                    <option>PGY-2</option>
+                                    <option>PGY-3+</option>
+                                </select>
+                                <button class="btn btn-primary" style="width: 100%;" onclick="handleRegister()">Create Account</button>
+                            `}
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // DASHBOARD
+            if (view === 'dashboard') {
+                const userSubs = app_state.submissions.filter(s => s.userId === user.id);
+                const points = userSubs.reduce((sum, s) => sum + s.totalPoints, 0);
+                const latestCase = app_state.cases[0];
+                const done = userSubs.some(s => s.caseId === latestCase?.id);
+
+                app.innerHTML = `
+                    <div class="header">
+                        <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+                            <h2 style="margin: 0;">❤️ Shock of the Week</h2>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="text-align: right;">
+                                    <div style="font-weight: 500;">${user.pseudonym}</div>
+                                    <div style="font-size: 12px; color: #6b7280;">${user.email}</div>
+                                </div>
+                                <span class="badge">${user.pgyLevel}</span>
+                                <button class="btn btn-secondary" onclick="logout()" style="padding: 8px 12px;">Logout</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="container">
+                        <div class="grid-2">
+                            <div class="stat-card"><div class="label">Points</div><div class="value">${points}</div></div>
+                            <div class="stat-card"><div class="label">Cases Done</div><div class="value">${userSubs.length}</div></div>
+                        </div>
+
+                        ${!user.isAdmin ? `
+                            ${latestCase ? `
+                                <div class="card">
+                                    <h3>${latestCase.title}</h3>
+                                    <p style="color: #6b7280; margin-bottom: 16px;">${latestCase.vignette}</p>
+                                    <button class="btn btn-primary" onclick="startCase()" style="width: 100%;" ${done ? 'disabled' : ''}>${done ? '✓ Done' : 'Start Case'}</button>
+                                </div>
+                            ` : ''}
+
+                            ${userSubs.length > 0 ? `
+                                <h3>Your History - Click to Review</h3>
+                                ${userSubs.map(s => {
+                                    const c = app_state.cases.find(x => x.id === s.caseId);
+                                    return `<div class="history-item" onclick="app_state.reviewingSubmission = '${s.id}'; app_state.view = 'review'; render();">
+                                        <div style="display: flex; justify-content: space-between;">
+                                            <div>
+                                                <h4 style="margin: 0;">${c?.title}</h4>
+                                                <p style="margin: 4px 0 0 0; font-size: 12px; color: #6b7280;">${new Date(s.submittedAt).toLocaleDateString()}</p>
+                                            </div>
+                                            <span class="badge" style="background: #ecfdf5; color: #059669; height: fit-content;">${s.totalPoints} pts</span>
+                                        </div>
+                                    </div>`;
+                                }).join('')}
+                            ` : ''}
+
+                            <button class="btn btn-secondary" onclick="app_state.view='leaderboard'; render();" style="width: 100%; margin-top: 32px; padding: 16px;">📊 Leaderboard</button>
+                        ` : `
+                            <div class="card" style="background: #f0fdf4; border-left: 4px solid #10b981;">
+                                <h3 style="color: #059669;">Admin Panel</h3>
+                                <p style="color: #6b7280; margin-bottom: 16px;">Welcome, ${user.pseudonym}! You can manage cases and view statistics.</p>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                    <button class="btn btn-secondary" onclick="app_state.adminTab='stats'; app_state.view='admin'; render();" style="width: 100%;">📊 Statistics</button>
+                                    <button class="btn btn-secondary" onclick="app_state.adminTab='users'; app_state.view='admin'; render();" style="width: 100%;">👥 Users</button>
+                                    <button class="btn btn-secondary" onclick="app_state.adminTab='post'; app_state.adminStep='case'; app_state.view='admin'; render();" style="width: 100%; grid-column: 1 / -1;">➕ Create Case</button>
+                                </div>
+                            </div>
+                        `}
+                    </div>
+                `;
+                return;
+            }
+
+            // CASE
+            if (view === 'case') {
+                const caseObj = app_state.cases[0];
+                if (!caseObj) return;
+                const q = caseObj.questions[app_state.currentQuestionIdx];
+                if (!q) return;
+
+                const isLast = app_state.currentQuestionIdx === caseObj.questions.length - 1;
+                const progress = ((app_state.currentQuestionIdx + 1) / caseObj.questions.length) * 100;
+                const conf = app_state.confidences[q.id] || 3;
+
+                app.innerHTML = `
+                    <div class="header"><div class="container"><button class="btn btn-secondary" onclick="app_state.view='dashboard'; render();" style="padding: 8px 12px;">← Back</button></div></div>
+                    <div class="container" style="max-width: 700px;">
+                        <div class="card">
+                            <h3>${caseObj.title}</h3>
+                            <p style="color: #6b7280;">Q${app_state.currentQuestionIdx + 1}/${caseObj.questions.length}</p>
+                            <div class="progress-bar"><div class="progress-fill" style="width: ${progress}%"></div></div>
+
+                            ${app_state.currentQuestionIdx === 0 ? `<p>${caseObj.vignette}</p>${caseObj.ekg ? `<img src="${caseObj.ekg}" alt="EKG" class="img-preview">` : ''}` : ''}
+
+                            <h4 style="margin-top: 20px;">${q.text}</h4>
+                            <div style="margin: 16px 0;">
+                                ${q.options.map(opt => `
+                                    <button style="width: 100%; padding: 12px; margin-bottom: 8px; border: 2px solid #d1d5db; background: ${app_state.answers[q.id] === opt ? '#ecfdf5' : '#f9fafb'}; border-color: ${app_state.answers[q.id] === opt ? '#10b981' : '#d1d5db'}; border-radius: 6px; text-align: left; cursor: pointer; font-weight: 500;" onclick="app_state.answers['${q.id}'] = '${opt}'; render();">
+                                        ${app_state.answers[q.id] === opt ? '✓ ' : ''}${opt}
+                                    </button>
+                                `).join('')}
+                            </div>
+
+                            <label>Confidence: <strong>${conf}/5</strong></label>
+                            <input type="range" min="1" max="5" value="${conf}" style="margin-bottom: 16px;" onchange="app_state.confidences['${q.id}'] = parseInt(this.value); render();">
+
+                            <div style="display: flex; gap: 12px;">
+                                <button class="btn btn-secondary" onclick="app_state.currentQuestionIdx = Math.max(0, app_state.currentQuestionIdx - 1); render();" ${app_state.currentQuestionIdx === 0 ? 'disabled' : ''}>← Prev</button>
+                                ${isLast ? `<button class="btn btn-primary" onclick="submitCase('${caseObj.id}');" style="flex: 1;">Submit</button>` : `<button class="btn btn-primary" onclick="app_state.currentQuestionIdx++; render();" ${!app_state.answers[q.id] ? 'disabled' : ''}>Next →</button>`}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // FEEDBACK
+            if (view === 'feedback') {
+                const data = app_state.feedbackData;
+                if (!data) return;
+                const caseComments = app_state.comments.filter(c => {
+                    const sub = app_state.submissions.find(s => s.id === c.submissionId);
+                    return sub && sub.caseId === data.caseId;
+                });
+                const userComment = caseComments.find(c => c.userId === user.id);
+
+                app.innerHTML = `
+                    <div class="header"><div class="container"><button class="btn btn-secondary" onclick="app_state.view='dashboard'; app_state.feedbackData=null; render();" style="padding: 8px 12px;">← Back</button></div></div>
+                    <div class="container" style="max-width: 700px;">
+                        <div class="card" style="background: #ecfdf5; border-left: 4px solid #10b981;">
+                            <h2 style="margin: 0 0 8px 0;">✓ Case Complete!</h2>
+                            <p style="margin: 0; font-size: 18px; color: #059669;"><strong>${data.totalPoints} points</strong></p>
+                        </div>
+
+                        <h3>Your Answers</h3>
+                        ${data.feedback.map(f => `
+                            <div class="feedback-box ${f.isCorrect ? '' : 'incorrect'}">
+                                <h4>${f.questionText}</h4>
+                                <p><strong>Your answer:</strong> ${f.userAnswer}</p>
+                                ${!f.isCorrect ? `<p><strong>Correct:</strong> <span style="color: #059669;">✓ ${f.correctAnswer}</span></p>` : ''}
+                                <p style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.1);"><strong>📚 Learning:</strong> ${f.explanation}</p>
+                                <p style="font-size: 12px; color: #6b7280; margin-top: 8px;">Points: ${f.points}</p>
+                            </div>
+                        `).join('')}
+
+                        <h3>Share Your Thoughts</h3>
+                        ${userComment ? `
+                            <div class="comment-box">
+                                <strong>${user.pseudonym}:</strong>
+                                <p style="margin-top: 8px;">${userComment.text}</p>
+                            </div>
+                        ` : `
+                            <textarea id="comment-text" placeholder="What did you learn? Share with others..." rows="3" style="margin-bottom: 12px;"></textarea>
+                            <button class="btn btn-primary" onclick="addComment('${data.submissionId}', document.getElementById('comment-text').value); document.getElementById('comment-text').value = ''; render();">Post Comment</button>
+                        `}
+
+                        <h3 style="margin-top: 24px;">Community Insights</h3>
+                        ${caseComments.filter(c => c.userId !== user.id).length > 0 ? `
+                            ${caseComments.filter(c => c.userId !== user.id).map(c => {
+                                const u = app_state.users.find(x => x.id === c.userId);
+                                return `<div class="comment-box">
+                                    <strong>${u?.pseudonym} (${u?.pgyLevel}):</strong>
+                                    <p style="margin-top: 8px;">${c.text}</p>
+                                </div>`;
+                            }).join('')}
+                        ` : `<p style="color: #6b7280; font-style: italic;">Be the first to share!</p>`}
+
+                        <button class="btn btn-primary" onclick="app_state.view='dashboard'; app_state.feedbackData=null; render();" style="width: 100%; margin-top: 20px;">Back to Dashboard</button>
+                    </div>
+                `;
+                return;
+            }
+
+            // REVIEW
+            if (view === 'review') {
+                const subId = app_state.reviewingSubmission;
+                const sub = app_state.submissions.find(s => s.id === subId);
+                if (!sub) return;
+                const caseObj = app_state.cases.find(c => c.id === sub.caseId);
+                if (!caseObj) return;
+
+                app.innerHTML = `
+                    <div class="header"><div class="container"><button class="btn btn-secondary" onclick="app_state.view='dashboard'; app_state.reviewingSubmission=null; render();" style="padding: 8px 12px;">← Back</button></div></div>
+                    <div class="container" style="max-width: 700px;">
+                        <div class="card">
+                            <h2>${caseObj.title}</h2>
+                            <p>${caseObj.vignette}</p>
+                            ${caseObj.ekg ? `<img src="${caseObj.ekg}" alt="EKG" class="img-preview">` : ''}
+                        </div>
+
+                        <h3>Your Answers & Learning</h3>
+                        ${sub.feedback.map(f => `
+                            <div class="feedback-box ${f.isCorrect ? '' : 'incorrect'}">
+                                <h4>${f.questionText}</h4>
+                                <p><strong>Your answer:</strong> ${f.userAnswer}</p>
+                                ${!f.isCorrect ? `<p><strong>Correct:</strong> <span style="color: #059669;">✓ ${f.correctAnswer}</span></p>` : '<p style="color: #059669;">✓ Correct!</p>'}
+                                <p style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.1);"><strong>📚 Learning:</strong> ${f.explanation}</p>
+                                <p style="font-size: 12px; color: #6b7280; margin-top: 8px;">Points: ${f.points}</p>
+                            </div>
+                        `).join('')}
+
+                        <div class="card" style="background: #ecfdf5; border-left: 4px solid #10b981;">
+                            <p style="margin: 0;"><strong>Total: ${sub.totalPoints} pts</strong></p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // LEADERBOARD
+            if (view === 'leaderboard') {
+                const lb = app_state.users.filter(u => !u.isAdmin).map(u => ({
+                    user: u,
+                    points: app_state.submissions.filter(s => s.userId === u.id).reduce((sum, s) => sum + s.totalPoints, 0)
+                })).sort((a, b) => b.points - a.points);
+
+                app.innerHTML = `
+                    <div class="header"><div class="container"><button class="btn btn-secondary" onclick="app_state.view='dashboard'; render();" style="padding: 8px 12px;">← Back</button></div></div>
+                    <div class="container" style="max-width: 700px;">
+                        <h2>🏆 Leaderboard</h2>
+                        ${lb.map((e, i) => `
+                            <div style="padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <span style="font-size: 18px; margin-right: 8px;">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '•'}</span>
+                                    <strong>${e.user.pseudonym}</strong>
+                                    <span style="color: #6b7280; margin-left: 8px; font-size: 12px;">${e.user.pgyLevel} • ${e.user.hospital}</span>
+                                </div>
+                                <strong style="color: #ef4444;">${e.points} pts</strong>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                return;
+            }
+
+            // ADMIN
+            if (view === 'admin') {
+                if (app_state.adminTab === 'users') {
+                    app.innerHTML = `
+                        <div class="header"><div class="container"><button class="btn btn-secondary" onclick="app_state.view='dashboard'; render();" style="padding: 8px 12px;">← Back</button></div></div>
+                        <div class="container">
+                            <h2>👥 User Database</h2>
+                            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+                                <div style="background: #f9fafb; padding: 12px; border-bottom: 1px solid #e5e7eb; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 12px; font-weight: 600; font-size: 12px; color: #6b7280;">
+                                    <div>Username</div>
+                                    <div>Email</div>
+                                    <div>Hospital</div>
+                                    <div>PGY/Joined</div>
+                                    <div>Cases</div>
+                                </div>
+                                ${app_state.users.filter(u => !u.isAdmin).map(u => {
+                                    const subs = app_state.submissions.filter(s => s.userId === u.id).length;
+                                    return `<div style="padding: 12px; border-bottom: 1px solid #e5e7eb; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 12px; align-items: center; font-size: 13px;">
+                                        <div><strong>${u.pseudonym}</strong></div>
+                                        <div>${u.email}</div>
+                                        <div>${u.hospital}</div>
+                                        <div>${u.pgyLevel}<br><span style="font-size: 11px; color: #6b7280;">${new Date(u.createdAt).toLocaleDateString()}</span></div>
+                                        <div style="text-align: center;"><strong style="color: #ef4444;">${subs}</strong></div>
+                                    </div>`;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                if (app_state.adminTab === 'stats') {
+                    const caseStats = app_state.cases.map(c => {
+                        const caseSubs = app_state.submissions.filter(s => s.caseId === c.id);
+                        const allResponses = [];
+                        caseSubs.forEach(sub => {
+                            sub.feedback.forEach((f, idx) => {
+                                allResponses.push({ question: idx, answer: f.userAnswer, confidence: f.confidence, correct: f.correctAnswer });
+                            });
+                        });
+                        return { case: c, submissions: caseSubs, responses: allResponses };
+                    });
+
+                    app.innerHTML = `
+                        <div class="header"><div class="container"><button class="btn btn-secondary" onclick="app_state.view='dashboard'; render();" style="padding: 8px 12px;">← Back</button></div></div>
+                        <div class="container">
+                            <h2>📊 Case Statistics</h2>
+                            <div class="grid-2">
+                                <div class="stat-card"><div class="label">Cases</div><div class="value">${app_state.cases.length}</div></div>
+                                <div class="stat-card"><div class="label">Submissions</div><div class="value">${app_state.submissions.length}</div></div>
+                            </div>
+
+                            ${caseStats.map(cs => `
+                                <div class="card">
+                                    <h3>${cs.case.title}</h3>
+                                    <p style="color: #6b7280; margin-bottom: 16px;"><strong>${cs.submissions.length}</strong> residents | <strong>${cs.responses.length}</strong> answers</p>
+                                    
+                                    ${cs.case.questions.map((q, qi) => {
+                                        const qResponses = cs.responses.filter(r => r.question === qi);
+                                        const optionCounts = {};
+                                        q.options.forEach(opt => optionCounts[opt] = 0);
+                                        qResponses.forEach(r => optionCounts[r.answer]++);
+                                        const avgConf = qResponses.length > 0 ? (qResponses.reduce((sum, r) => sum + r.confidence, 0) / qResponses.length).toFixed(1) : 0;
+                                        const correct = qResponses.filter(r => r.answer === r.correct).length;
+                                        
+                                        return `<div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb;">
+                                            <p style="margin: 0 0 8px 0;"><strong>Q${qi+1}: ${q.text}</strong></p>
+                                            <p style="font-size: 12px; color: #6b7280; margin: 0 0 8px 0;">Correct: ${correct}/${qResponses.length} | Avg Confidence: ${avgConf}/5</p>
+                                            ${q.options.map(opt => {
+                                                const count = optionCounts[opt] || 0;
+                                                const pct = qResponses.length ? ((count/qResponses.length)*100).toFixed(0) : 0;
+                                                return `<div style="margin-bottom: 6px;">
+                                                    <div style="font-size: 12px; margin-bottom: 2px;">${opt === q.correct ? '✓ ' : ''}${opt}: <strong>${count}</strong> (${pct}%)</div>
+                                                    <div style="width: 100%; height: 4px; background: #e5e7eb; border-radius: 2px;">
+                                                        <div style="width: ${pct}%; height: 100%; background: ${opt === q.correct ? '#10b981' : '#ef4444'};"></div>
+                                                    </div>
+                                                </div>`;
+                                            }).join('')}
+                                        </div>`;
+                                    }).join('')}
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    return;
+                }
+
+                if (app_state.adminTab === 'post') {
+                    if (app_state.adminStep === 'case') {
+                        const f = app_state.adminForm;
+                        app.innerHTML = `
+                            <div class="header"><div class="container"><button class="btn btn-secondary" onclick="app_state.view='dashboard'; render();" style="padding: 8px 12px;">← Back</button></div></div>
+                            <div class="container" style="max-width: 600px;">
+                                <h2>Create Case</h2>
+                                <div class="card">
+                                    <label>Title</label>
+                                    <input type="text" placeholder="Case title..." value="${f.title}" onchange="app_state.adminForm.title = this.value;">
+                                    <label>Description</label>
+                                    <input type="text" placeholder="Brief description..." value="${f.description}" onchange="app_state.adminForm.description = this.value;">
+                                    <label>Vignette</label>
+                                    <textarea placeholder="Patient presentation..." rows="4" onchange="app_state.adminForm.vignette = this.value;">${f.vignette}</textarea>
+                                    <label>EKG</label>
+                                    <div style="border: 2px dashed #d1d5db; padding: 20px; border-radius: 6px; text-align: center; margin-bottom: 12px;">
+                                        <input type="file" accept="image/*" id="ekg-file" onchange="handleFileUpload('ekg', this.files[0]);" style="display: none;">
+                                        <label for="ekg-file" style="cursor: pointer;">
+                                            ${f.ekg_preview ? `<img src="${f.ekg_preview}" alt="EKG" class="img-preview">✓` : '📷 Click'}
+                                        </label>
+                                    </div>
+                                    <button class="btn btn-primary" onclick="app_state.adminStep='questions'; render();" style="width: 100%;" ${!f.title || !f.vignette || !f.ekg ? 'disabled' : ''}>Next</button>
+                                </div>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    if (app_state.adminStep === 'questions') {
+                        const q = app_state.adminForm.currentQuestion;
+                        app.innerHTML = `
+                            <div class="header"><div class="container"><button class="btn btn-secondary" onclick="app_state.view='dashboard'; render();" style="padding: 8px 12px;">← Back</button></div></div>
+                            <div class="container" style="max-width: 600px;">
+                                <h2>Add Questions</h2>
+                                <div class="card">
+                                    <h4>Added: ${app_state.adminForm.questions.length}</h4>
+                                    ${app_state.adminForm.questions.map((qu, i) => `
+                                        <div style="padding: 8px; background: #f9fafb; margin-bottom: 8px; border-radius: 6px;">
+                                            <p style="margin: 0;">Q${i+1}. ${qu.text}</p>
+                                            <button class="btn btn-secondary" onclick="app_state.adminForm.questions.splice(${i}, 1); render();" style="padding: 4px 8px; margin-top: 8px; font-size: 12px;">Remove</button>
+                                        </div>
+                                    `).join('')}
+                                </div>
+
+                                <div class="card">
+                                    <label>Type</label>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px;">
+                                        <button style="padding: 12px; border: 2px solid ${q.type === 'multiple_choice' ? '#ef4444' : '#d1d5db'}; background: ${q.type === 'multiple_choice' ? '#fef2f2' : 'white'}; border-radius: 6px; cursor: pointer;" onclick="app_state.adminForm.currentQuestion.type='multiple_choice'; render();">MC</button>
+                                        <button style="padding: 12px; border: 2px solid ${q.type === 'true_false' ? '#ef4444' : '#d1d5db'}; background: ${q.type === 'true_false' ? '#fef2f2' : 'white'}; border-radius: 6px; cursor: pointer;" onclick="app_state.adminForm.currentQuestion.type='true_false'; app_state.adminForm.currentQuestion.options=['True','False']; render();">T/F</button>
+                                    </div>
+
+                                    <label>Question</label>
+                                    <textarea placeholder="Question?" rows="2" onchange="app_state.adminForm.currentQuestion.text = this.value;">${q.text}</textarea>
+
+                                    <label>Difficulty</label>
+                                    <select onchange="app_state.adminForm.currentQuestion.difficulty = parseInt(this.value);">
+                                        <option value="1" ${q.difficulty === 1 ? 'selected' : ''}>Easy</option>
+                                        <option value="2" ${q.difficulty === 2 ? 'selected' : ''}>Medium</option>
+                                        <option value="3" ${q.difficulty === 3 ? 'selected' : ''}>Hard</option>
+                                    </select>
+
+                                    <label>Options</label>
+                                    ${q.options.map((opt, i) => `<input type="text" placeholder="Option ${i+1}" value="${opt}" onchange="app_state.adminForm.currentQuestion.options[${i}] = this.value;">`).join('')}
+
+                                    <label>✓ Correct (Click radio)</label>
+                                    <div style="margin-bottom: 16px;">
+                                        ${q.options.map((opt, i) => `
+                                            <div style="display: flex; align-items: center; padding: 8px; margin-bottom: 6px; background: #f9fafb; border-radius: 4px;">
+                                                <input type="radio" name="correct" ${q.correct === opt ? 'checked' : ''} onchange="app_state.adminForm.currentQuestion.correct = '${opt}'; render();" style="width: auto; margin-right: 8px; cursor: pointer;">
+                                                <label style="margin: 0; cursor: pointer; flex: 1;">${opt || '(empty)'}</label>
+                                                ${q.correct === opt ? `<span style="color: #10b981;">✓</span>` : ''}
+                                            </div>
+                                        `).join('')}
+                                    </div>
+
+                                    <label>Explanation</label>
+                                    <textarea placeholder="Explain..." rows="3" onchange="app_state.adminForm.currentQuestion.explanation = this.value;">${q.explanation}</textarea>
+
+                                    <button class="btn btn-primary" onclick="addQuestion();" style="width: 100%; margin-bottom: 12px;">+ Add Q</button>
+                                </div>
+
+                                <div style="display: flex; gap: 12px;">
+                                    <button class="btn btn-secondary" onclick="app_state.adminStep='case'; render();">← Back</button>
+                                    <button class="btn btn-primary" onclick="createCase();" style="flex: 1;" ${app_state.adminForm.questions.length === 0 ? 'disabled' : ''}>✓ Create</button>
+                                </div>
+                            </div>
+                        `;
+                        return;
+                    }
+                }
+            }
+        }
+
+        function handleFileUpload(type, file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                if (type === 'ekg') {
+                    app_state.adminForm.ekg = e.target.result;
+                    app_state.adminForm.ekg_preview = e.target.result;
+                } else if (type === 'explain') {
+                    app_state.adminForm.currentQuestion.explanationImage = e.target.result;
+                }
+                render();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function addQuestion() {
+            const q = app_state.adminForm.currentQuestion;
+            if (!q.text.trim() || !q.correct || !q.explanation.trim()) {
+                alert('Fill required fields');
+                return;
+            }
+            const filledOpts = q.options.filter(o => o.trim()).length;
+            if ((q.type === 'multiple_choice' && filledOpts < 4) || (q.type === 'true_false' && filledOpts < 2)) {
+                alert('Fill all options');
+                return;
+            }
+            app_state.adminForm.questions.push({ ...q, id: 'q' + Date.now() });
+            app_state.adminForm.currentQuestion = { type: 'multiple_choice', text: '', options: ['', '', '', ''], correct: '', difficulty: 1, explanation: '', explanationImage: null };
+            render();
+        }
+
+        function createCase() {
+            const f = app_state.adminForm;
+            if (!f.title || !f.vignette || !f.ekg || f.questions.length === 0) {
+                alert('Complete case');
+                return;
+            }
+            app_state.cases.unshift({
+                id: 'case' + Date.now(),
+                title: f.title,
+                description: f.description,
+                vignette: f.vignette,
+                ekg: f.ekg,
+                questions: f.questions
+            });
+            app_state.adminForm = { title: '', description: '', vignette: '', ekg: null, ekg_preview: null, questions: [], currentQuestion: { type: 'multiple_choice', text: '', options: ['', '', '', ''], correct: '', difficulty: 1, explanation: '', explanationImage: null } };
+            app_state.adminTab = 'stats';
+            app_state.adminStep = 'case';
+            saveData();
+            render();
+        }
+
+        render();
+    </script>
+</body>
+</html>
