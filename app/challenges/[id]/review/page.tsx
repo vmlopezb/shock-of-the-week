@@ -82,13 +82,21 @@ export default async function ReviewPage({
       <div>
         <h3 className="mb-3 text-lg font-semibold">Your Answers</h3>
         <div className="space-y-3">
-          {(questions ?? []).map((q) => (
-            <QuestionFeedback
-              key={q.id}
-              question={q as unknown as Question}
-              answer={answersByQuestion.get(q.id)}
-            />
-          ))}
+          {(questions ?? []).map((q) => {
+            const question = q as unknown as Question;
+            const explanationMediaUrl = question.explanation_media_url
+              ? supabase.storage.from("challenge-media").getPublicUrl(question.explanation_media_url)
+                  .data.publicUrl
+              : null;
+            return (
+              <QuestionFeedback
+                key={q.id}
+                question={question}
+                answer={answersByQuestion.get(q.id)}
+                explanationMediaUrl={explanationMediaUrl}
+              />
+            );
+          })}
         </div>
       </div>
 
@@ -127,7 +135,15 @@ export default async function ReviewPage({
   );
 }
 
-function QuestionFeedback({ question, answer }: { question: Question; answer?: Answer }) {
+function QuestionFeedback({
+  question,
+  answer,
+  explanationMediaUrl,
+}: {
+  question: Question;
+  answer?: Answer;
+  explanationMediaUrl: string | null;
+}) {
   if (!answer) return null;
 
   const yourAnswerText =
@@ -156,9 +172,19 @@ function QuestionFeedback({ question, answer }: { question: Question; answer?: A
         </p>
       ) : null}
       {question.explanation ? (
-        <p className="mt-2 border-t border-black/10 pt-2 text-sm">
-          <strong>📚 Learning:</strong> {question.explanation}
-        </p>
+        <div className="mt-2 border-t border-black/10 pt-2 text-sm">
+          <p>
+            <strong>📚 Learning:</strong> {question.explanation}
+          </p>
+          {explanationMediaUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={explanationMediaUrl}
+              alt="Explanation"
+              className="mt-2 max-h-72 rounded-md"
+            />
+          ) : null}
+        </div>
       ) : null}
       <p className="mt-2 text-xs text-gray-500">Points: {answer.points}</p>
     </div>

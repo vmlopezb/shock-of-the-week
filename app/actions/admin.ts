@@ -30,6 +30,8 @@ export interface NewQuestionInput {
   difficulty: 1 | 2 | 3;
   explanation: string;
   category_id: string | null;
+  explanation_media_url: string | null;
+  explanation_media_type: MediaType | null;
 }
 
 export interface NewChallengeInput {
@@ -87,6 +89,8 @@ export async function createChallenge(input: NewChallengeInput): Promise<ActionR
     difficulty: q.difficulty,
     explanation: q.explanation.trim() || null,
     category_id: q.category_id,
+    explanation_media_url: q.explanation_media_url,
+    explanation_media_type: q.explanation_media_type,
   }));
 
   const { error: questionsError } = await supabase.from("questions").insert(questionRows);

@@ -20,6 +20,7 @@ const EMPTY_OPTIONS = [
 
 function emptyQuestionDraft(defaultCategoryId: string | null) {
   return {
+    mediaFolderId: crypto.randomUUID(),
     type: "multiple_choice" as QuestionType,
     question_text: "",
     options: EMPTY_OPTIONS.map((o) => ({ ...o })),
@@ -28,6 +29,9 @@ function emptyQuestionDraft(defaultCategoryId: string | null) {
     difficulty: 1 as 1 | 2 | 3,
     explanation: "",
     category_id: defaultCategoryId,
+    explanationMediaPath: null as string | null,
+    explanationMediaType: null as MediaType | null,
+    explanationMediaPreview: null as string | null,
   };
 }
 
@@ -55,6 +59,8 @@ export default function ChallengeBuilder({ categories }: { categories: Category[
   const [questions, setQuestions] = useState<NewQuestionInput[]>([]);
   const [draft, setDraft] = useState(() => emptyQuestionDraft(categories[0]?.id ?? null));
   const [draftError, setDraftError] = useState<string | null>(null);
+  const [explanationUploading, setExplanationUploading] = useState(false);
+  const [explanationUploadError, setExplanationUploadError] = useState<string | null>(null);
 
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -98,6 +104,43 @@ export default function ChallengeBuilder({ categories }: { categories: Category[
     setMediaPreview(URL.createObjectURL(file));
   }
 
+  async function handleExplanationMediaChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setExplanationUploadError(null);
+
+    const isImage = IMAGE_TYPES.includes(file.type);
+    if (!isImage) {
+      setExplanationUploadError("Only JPG/PNG/WebP images are supported for explanations.");
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setExplanationUploadError("Images must be 10MB or smaller.");
+      return;
+    }
+
+    setExplanationUploading(true);
+    const ext = file.name.split(".").pop() ?? "jpg";
+    const path = `${challengeId}/questions/${draft.mediaFolderId}/explanation.${ext}`;
+    const supabase = createClient();
+    const { error } = await supabase.storage
+      .from("challenge-media")
+      .upload(path, file, { upsert: true });
+    setExplanationUploading(false);
+
+    if (error) {
+      setExplanationUploadError(`Upload failed: ${error.message}`);
+      return;
+    }
+
+    setDraft((d) => ({
+      ...d,
+      explanationMediaPath: path,
+      explanationMediaType: "image",
+      explanationMediaPreview: URL.createObjectURL(file),
+    }));
+  }
+
   function addQuestion() {
     setDraftError(null);
     const text = draft.question_text.trim();
@@ -128,6 +171,8 @@ export default function ChallengeBuilder({ categories }: { categories: Category[
           difficulty: draft.difficulty,
           explanation: draft.explanation,
           category_id: draft.category_id,
+          explanation_media_url: draft.explanationMediaPath,
+          explanation_media_type: draft.explanationMediaType,
         },
       ]);
     } else {
@@ -150,6 +195,8 @@ export default function ChallengeBuilder({ categories }: { categories: Category[
           difficulty: draft.difficulty,
           explanation: draft.explanation,
           category_id: draft.category_id,
+          explanation_media_url: draft.explanationMediaPath,
+          explanation_media_type: draft.explanationMediaType,
         },
       ]);
     }
@@ -412,6 +459,29 @@ export default function ChallengeBuilder({ categories }: { categories: Category[
               value={draft.explanation}
               onChange={(e) => setDraft((d) => ({ ...d, explanation: e.target.value }))}
             />
+          </div>
+
+          <div>
+            <label className="label">Explanation image (optional)</label>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleExplanationMediaChange}
+            />
+            {explanationUploading ? (
+              <p className="mt-1 text-xs text-gray-500">Uploading...</p>
+            ) : null}
+            {explanationUploadError ? (
+              <p className="mt-1 text-xs text-brand-600">{explanationUploadError}</p>
+            ) : null}
+            {draft.explanationMediaPreview ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={draft.explanationMediaPreview}
+                alt="Explanation preview"
+                className="mt-2 max-h-48 rounded-md"
+              />
+            ) : null}
           </div>
 
           {draftError ? <p className="text-sm text-brand-600">{draftError}</p> : null}
