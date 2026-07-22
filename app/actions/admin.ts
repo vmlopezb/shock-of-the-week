@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { ChallengeStatus, MediaType, QuestionOption, QuestionType } from "@/lib/types";
 
 async function requireAdmin() {
@@ -118,6 +119,45 @@ export async function updateChallenge(
 
   revalidatePath("/");
   revalidatePath("/admin/challenges");
+}
+
+export async function deleteChallenge(challengeId: string): Promise<ActionResult> {
+  const { user, isAdmin } = await requireAdmin();
+  if (!user || !isAdmin) return { error: "Admins only." };
+
+  // Service-role client: bypasses RLS so it can clear out submissions/comments
+  // that reference this challenge before deleting it (questions cascade
+  // automatically via the FK on the questions table).
+  const admin = createAdminClient();
+  await admin.from("submissions").delete().eq("challenge_id", challengeId);
+  await admin.from("comments").delete().eq("challenge_id", challengeId);
+  const { error } = await admin.from("challenges").delete().eq("id", challengeId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/");
+  revalidatePath("/admin/challenges");
+  revalidatePath("/admin/stats");
+  revalidatePath("/leaderboard");
+  return {};
+}
+
+export async function deleteUser(userId: string): Promise<ActionResult> {
+  const { user, isAdmin } = await requireAdmin();
+  if (!user || !isAdmin) return { error: "Admins only." };
+  if (userId === user.id) return { error: "You can't delete your own account here." };
+
+  const admin = createAdminClient();
+  await admin.from("submissions").delete().eq("user_id", userId);
+  await admin.from("comments").delete().eq("user_id", userId);
+
+  // Deleting the auth user cascades to the profiles row automatically.
+  const { error } = await admin.auth.admin.deleteUser(userId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/users");
+  revalidatePath("/leaderboard");
+  return {};
 }
 
 export async function addHospital(_prevState: ActionResult, formData: FormData): Promise<ActionResult> {

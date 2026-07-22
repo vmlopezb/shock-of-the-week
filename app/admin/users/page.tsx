@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { deleteUser } from "@/app/actions/admin";
+import DeleteButton from "@/components/DeleteButton";
 
 export default async function AdminUsersPage() {
   const supabase = await createClient();
@@ -24,14 +26,15 @@ export default async function AdminUsersPage() {
       </p>
 
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-        <div className="grid grid-cols-4 gap-3 border-b border-gray-200 bg-gray-50 p-3 text-xs font-semibold uppercase text-gray-500">
+        <div className="grid grid-cols-5 gap-3 border-b border-gray-200 bg-gray-50 p-3 text-xs font-semibold uppercase text-gray-500">
           <div>Username</div>
           <div>Hospital</div>
           <div>PGY / Joined</div>
           <div>Cases</div>
+          <div>Actions</div>
         </div>
         {(profiles ?? []).map((p) => (
-          <div key={p.id} className="grid grid-cols-4 items-center gap-3 border-b border-gray-100 p-3 text-sm">
+          <div key={p.id} className="grid grid-cols-5 items-center gap-3 border-b border-gray-100 p-3 text-sm">
             <div className="font-medium">{p.username}</div>
             <div>{(p.hospitals as unknown as { name: string } | null)?.name ?? "—"}</div>
             <div>
@@ -42,6 +45,12 @@ export default async function AdminUsersPage() {
               </span>
             </div>
             <div className="font-semibold text-brand-600">{caseCounts.get(p.id) ?? 0}</div>
+            <div>
+              <DeleteButton
+                action={deleteUser.bind(null, p.id)}
+                confirmMessage={`Delete ${p.username}? This permanently removes their account, submissions, and comments. This cannot be undone.`}
+              />
+            </div>
           </div>
         ))}
         {(profiles ?? []).length === 0 ? (

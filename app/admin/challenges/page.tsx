@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { updateChallenge } from "@/app/actions/admin";
+import { deleteChallenge, updateChallenge } from "@/app/actions/admin";
+import DeleteButton from "@/components/DeleteButton";
 import type { Challenge } from "@/lib/types";
 
 function toLocalInputValue(iso: string) {
@@ -65,9 +66,15 @@ export default async function AdminChallengesPage() {
                 />
               </div>
             </div>
-            <button type="submit" className="btn-secondary mt-2">
-              Save
-            </button>
+            <div className="mt-2 flex items-center gap-4">
+              <button type="submit" className="btn-secondary">
+                Save
+              </button>
+              <DeleteButton
+                action={deleteChallenge.bind(null, c.id)}
+                confirmMessage={`Delete "${c.title}"? This also permanently deletes every submission and comment on it. This cannot be undone.`}
+              />
+            </div>
           </form>
         ))}
         {(challenges ?? []).length === 0 ? (

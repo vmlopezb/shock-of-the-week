@@ -86,19 +86,17 @@ export default function ChallengeTaker({
         />
       </div>
 
-      {index === 0 ? (
-        <div className="mt-5">
-          <p className="text-gray-700">{challenge.vignette}</p>
-          {mediaUrl ? (
-            challenge.media_type === "video" ? (
-              <video src={mediaUrl} controls className="mt-3 max-h-96 w-full rounded-md" />
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={mediaUrl} alt="Challenge media" className="mt-3 max-h-96 rounded-md" />
-            )
-          ) : null}
-        </div>
-      ) : null}
+      <div className="mt-5">
+        <p className="text-gray-700">{challenge.vignette}</p>
+        {mediaUrl ? (
+          challenge.media_type === "video" ? (
+            <video src={mediaUrl} controls className="mt-3 max-h-96 w-full rounded-md" />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={mediaUrl} alt="Challenge media" className="mt-3 max-h-96 rounded-md" />
+          )
+        ) : null}
+      </div>
 
       <h3 className="mt-6 font-medium">{question.question_text}</h3>
 
