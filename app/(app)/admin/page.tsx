@@ -33,6 +33,7 @@ export default async function AdminHome() {
         <AdminLink href="/admin/users" label="👥 Users" />
         <AdminLink href="/admin/hospitals" label="🏥 Hospitals" />
         <AdminLink href="/admin/categories" label="🏷️ Categories" />
+        <AdminLink href="/admin/messages" label="✉️ Messages" />
       </div>
     </div>
   );

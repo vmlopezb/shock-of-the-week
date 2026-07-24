@@ -99,7 +99,7 @@ export async function submitChallenge(
     return { error: "Something went wrong saving your answers." };
   }
 
-  revalidatePath("/");
+  revalidatePath("/dashboard");
   revalidatePath(`/challenges/${challengeId}`);
   revalidatePath("/leaderboard");
   revalidatePath("/profile");

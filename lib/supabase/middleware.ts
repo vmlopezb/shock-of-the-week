@@ -37,17 +37,21 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
   const isAuthPage = path.startsWith("/login") || path.startsWith("/register");
+  const isLandingPage = path === "/";
+  const isPublicPage = isAuthPage || isLandingPage || path === "/contact";
   const isAdminPage = path.startsWith("/admin");
 
-  if (!user && !isAuthPage) {
+  if (!user && !isPublicPage) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  if (user && isAuthPage) {
+  // Logged-in visitors don't need the marketing page or the login/register
+  // forms - send them straight to their dashboard.
+  if (user && (isAuthPage || isLandingPage)) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
 
@@ -60,7 +64,7 @@ export async function updateSession(request: NextRequest) {
 
     if (profile?.role !== "admin") {
       const url = request.nextUrl.clone();
-      url.pathname = "/";
+      url.pathname = "/dashboard";
       return NextResponse.redirect(url);
     }
   }

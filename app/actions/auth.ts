@@ -73,7 +73,7 @@ export async function registerAction(
     return { error: signUpError.message };
   }
 
-  redirect("/");
+  redirect("/dashboard");
 }
 
 export async function loginAction(
@@ -107,7 +107,7 @@ export async function loginAction(
     return { error: "Invalid username or password." };
   }
 
-  redirect("/");
+  redirect("/dashboard");
 }
 
 export async function logoutAction() {

@@ -100,6 +100,7 @@ export async function createChallenge(input: NewChallengeInput): Promise<ActionR
   }
 
   revalidatePath("/");
+  revalidatePath("/dashboard");
   revalidatePath("/admin/challenges");
 
   return { id: input.id };
@@ -122,6 +123,7 @@ export async function updateChallenge(
     .eq("id", challengeId);
 
   revalidatePath("/");
+  revalidatePath("/dashboard");
   revalidatePath("/admin/challenges");
 }
 
@@ -140,6 +142,7 @@ export async function deleteChallenge(challengeId: string): Promise<ActionResult
   if (error) return { error: error.message };
 
   revalidatePath("/");
+  revalidatePath("/dashboard");
   revalidatePath("/admin/challenges");
   revalidatePath("/admin/stats");
   revalidatePath("/leaderboard");
