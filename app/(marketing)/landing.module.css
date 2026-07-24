@@ -5,6 +5,14 @@
   as a bare `body`, `a`, `h1`, `h2`, `section`, `footer`, `nav` rule would leak
   globally into the rest of the app (dashboard, admin, etc.) if left
   unscoped. That's why this file looks slightly different from the original.
+
+  Bare-element rules below use :where(.page) rather than plain `.page` -
+  :where() contributes zero specificity, so e.g. `:where(.page) a` stays as
+  weak as a bare `a{}` selector was in the original design. Using plain
+  `.page a` instead (class + element = higher specificity than a single
+  class) would let it beat button-specific rules like .miniBtn/.ctaBoxBtn
+  and silently override their intended text color - which is exactly what
+  happened before this comment was added.
 */
 
 .page {
@@ -28,25 +36,25 @@
   line-height: 1.6;
 }
 
-.page * {
+:where(.page) * {
   box-sizing: border-box;
 }
 
-.page a {
+:where(.page) a {
   text-decoration: none;
   color: inherit;
 }
 
-.page img {
+:where(.page) img {
   max-width: 100%;
   display: block;
 }
 
-.page section {
+:where(.page) section {
   padding: 100px 0;
 }
 
-.page h1 {
+:where(.page) h1 {
   font-family: var(--font-manrope), sans-serif;
   font-size: clamp(3.4rem, 7vw, 6.7rem);
   line-height: 0.95;
@@ -55,14 +63,14 @@
   max-width: 760px;
 }
 
-.page h1 span {
+:where(.page) h1 span {
   background: linear-gradient(90deg, #fff, var(--cyan));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-.page h2 {
+:where(.page) h2 {
   font-family: var(--font-manrope), sans-serif;
   font-size: clamp(2.2rem, 4vw, 3.8rem);
   line-height: 1.08;
@@ -583,7 +591,7 @@
   .hero {
     padding-top: 125px;
   }
-  .page h1 {
+  :where(.page) h1 {
     font-size: 3.35rem;
   }
   .featureGrid {
@@ -601,7 +609,7 @@
   .footerLinks {
     flex-wrap: wrap;
   }
-  .page section {
+  :where(.page) section {
     padding: 78px 0;
   }
 }
