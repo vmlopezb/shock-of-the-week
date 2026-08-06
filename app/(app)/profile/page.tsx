@@ -11,7 +11,7 @@ export default async function ProfilePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("username, pgy_level, hospitals(name)")
+    .select("username, pgy_level, other_institution, hospitals(name)")
     .eq("id", user.id)
     .single();
 
@@ -22,7 +22,9 @@ export default async function ProfilePage() {
     .order("accuracy_pct", { ascending: true });
 
   const categoryStats = (stats ?? []) as UserCategoryStat[];
-  const hospitalName = (profile?.hospitals as unknown as { name: string } | null)?.name;
+  const hospitalName =
+    (profile?.hospitals as unknown as { name: string } | null)?.name ??
+    profile?.other_institution;
 
   return (
     <div className="space-y-6">

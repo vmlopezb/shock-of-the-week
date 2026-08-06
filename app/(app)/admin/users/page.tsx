@@ -7,7 +7,7 @@ export default async function AdminUsersPage() {
 
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id, username, pgy_level, created_at, hospitals(name)")
+    .select("id, username, pgy_level, created_at, other_institution, hospitals(name)")
     .eq("role", "participant")
     .order("created_at", { ascending: false });
 
@@ -36,7 +36,11 @@ export default async function AdminUsersPage() {
         {(profiles ?? []).map((p) => (
           <div key={p.id} className="grid grid-cols-5 items-center gap-3 border-b border-gray-100 p-3 text-sm">
             <div className="font-medium">{p.username}</div>
-            <div>{(p.hospitals as unknown as { name: string } | null)?.name ?? "—"}</div>
+            <div>
+              {(p.hospitals as unknown as { name: string } | null)?.name ??
+                p.other_institution ??
+                "—"}
+            </div>
             <div>
               {p.pgy_level}
               <br />

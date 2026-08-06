@@ -34,18 +34,30 @@ export default async function AdminChallengesPage() {
                 <h3 className="font-semibold">{c.title}</h3>
                 <p className="text-xs text-gray-500">Created {new Date(c.created_at).toLocaleDateString()}</p>
               </div>
-              <span
-                className={`badge ${
-                  c.status === "published"
-                    ? "bg-green-100 text-green-700"
-                    : c.status === "draft"
-                      ? "bg-gray-100 text-gray-600"
-                      : "bg-yellow-100 text-yellow-700"
-                }`}
-              >
-                {c.status}
-              </span>
+              <div className="flex items-center gap-2">
+                {c.is_demo ? (
+                  <span className="badge bg-blue-100 text-blue-700">★ Demo</span>
+                ) : null}
+                <span
+                  className={`badge ${
+                    c.status === "published"
+                      ? "bg-green-100 text-green-700"
+                      : c.status === "draft"
+                        ? "bg-gray-100 text-gray-600"
+                        : "bg-yellow-100 text-yellow-700"
+                  }`}
+                >
+                  {c.status}
+                </span>
+              </div>
             </div>
+
+            <Link
+              href={`/admin/challenges/${c.id}/edit`}
+              className="mt-2 inline-block text-sm font-medium text-brand-600"
+            >
+              Edit title, vignette, media & questions →
+            </Link>
 
             <div className="mt-3 grid grid-cols-2 gap-3">
               <div>

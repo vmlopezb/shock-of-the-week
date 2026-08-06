@@ -9,11 +9,13 @@ export interface AuthFormState {
 }
 
 const PGY_LEVELS: PgyLevel[] = [
+  "Medical Student",
   "PGY-1",
   "PGY-2",
   "PGY-3",
   "PGY-4",
   "Attending/Faculty",
+  "Allied Health Professional",
 ];
 
 const USERNAME_PATTERN = /^[a-zA-Z0-9_]{3,20}$/;
@@ -26,7 +28,9 @@ export async function registerAction(
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const hospitalId = String(formData.get("hospital_id") ?? "");
+  const otherInstitution = String(formData.get("other_institution") ?? "").trim();
   const pgyLevel = String(formData.get("pgy_level") ?? "") as PgyLevel;
+  const isOtherInstitution = hospitalId === "other";
 
   if (!USERNAME_PATTERN.test(username)) {
     return {
@@ -36,6 +40,9 @@ export async function registerAction(
   }
   if (!email || !password || !hospitalId || !PGY_LEVELS.includes(pgyLevel)) {
     return { error: "Please fill out every field." };
+  }
+  if (isOtherInstitution && !otherInstitution) {
+    return { error: "Enter your institution's name." };
   }
   if (password.length < 6) {
     return { error: "Password must be at least 6 characters." };
@@ -60,7 +67,8 @@ export async function registerAction(
     options: {
       data: {
         username,
-        hospital_id: hospitalId,
+        hospital_id: isOtherInstitution ? "" : hospitalId,
+        other_institution: isOtherInstitution ? otherInstitution : "",
         pgy_level: pgyLevel,
       },
     },

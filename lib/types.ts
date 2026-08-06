@@ -1,4 +1,11 @@
-export type PgyLevel = "PGY-1" | "PGY-2" | "PGY-3" | "PGY-4" | "Attending/Faculty";
+export type PgyLevel =
+  | "Medical Student"
+  | "PGY-1"
+  | "PGY-2"
+  | "PGY-3"
+  | "PGY-4"
+  | "Attending/Faculty"
+  | "Allied Health Professional";
 export type UserRole = "participant" | "admin";
 export type MediaType = "image" | "video";
 export type ChallengeStatus = "draft" | "published" | "archived";
@@ -20,6 +27,7 @@ export interface Profile {
   id: string;
   username: string;
   hospital_id: string | null;
+  other_institution: string | null;
   pgy_level: PgyLevel;
   role: UserRole;
   created_at: string;
@@ -29,6 +37,7 @@ export interface ProfilePublic {
   id: string;
   username: string;
   hospital_id: string | null;
+  other_institution: string | null;
   pgy_level: PgyLevel;
   created_at: string;
 }
@@ -47,6 +56,7 @@ export interface Challenge {
   category_id: string | null;
   status: ChallengeStatus;
   publish_at: string;
+  is_demo: boolean;
   created_by: string | null;
   created_at: string;
 }

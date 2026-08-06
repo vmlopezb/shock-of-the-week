@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import CommentForm from "./CommentForm";
+import Lightbox from "@/components/Lightbox";
 import type { Answer, Challenge, Question } from "@/lib/types";
 
 export default async function ReviewPage({
@@ -73,8 +74,7 @@ export default async function ReviewPage({
           challenge.media_type === "video" ? (
             <video src={mediaUrl} controls className="mt-3 max-h-96 w-full rounded-md" />
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={mediaUrl} alt="Challenge media" className="mt-3 max-h-96 rounded-md" />
+            <Lightbox src={mediaUrl} alt="Challenge media" className="mt-3 max-h-96 rounded-md" />
           )
         ) : null}
       </div>
@@ -173,12 +173,15 @@ function QuestionFeedback({
       ) : null}
       {question.explanation ? (
         <div className="mt-2 border-t border-black/10 pt-2 text-sm">
-          <p>
-            <strong>📚 Learning:</strong> {question.explanation}
-          </p>
+          <strong>📚 Learning:</strong>
+          <div
+            className="rich-text mt-1"
+            // Safe: explanation HTML is sanitized server-side before it's
+            // ever saved (see lib/sanitizeHtml.ts), never at render time.
+            dangerouslySetInnerHTML={{ __html: question.explanation }}
+          />
           {explanationMediaUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Lightbox
               src={explanationMediaUrl}
               alt="Explanation"
               className="mt-2 max-h-72 rounded-md"

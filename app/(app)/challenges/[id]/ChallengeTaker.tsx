@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { submitChallenge, type AnswerInput } from "@/app/actions/challenges";
+import Lightbox from "@/components/Lightbox";
 import type { Challenge, QuestionForTaking } from "@/lib/types";
 
 interface AnswerState {
@@ -92,8 +93,7 @@ export default function ChallengeTaker({
           challenge.media_type === "video" ? (
             <video src={mediaUrl} controls className="mt-3 max-h-96 w-full rounded-md" />
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={mediaUrl} alt="Challenge media" className="mt-3 max-h-96 rounded-md" />
+            <Lightbox src={mediaUrl} alt="Challenge media" className="mt-3 max-h-96 rounded-md" />
           )
         ) : null}
       </div>

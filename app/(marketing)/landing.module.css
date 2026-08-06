@@ -243,6 +243,17 @@
   flex-wrap: wrap;
 }
 
+.demoLink {
+  margin: 16px 0 0;
+  font-size: 0.92rem;
+  color: #a9c2d6;
+}
+.demoLink a {
+  color: var(--cyan);
+  text-decoration: underline;
+  font-weight: 700;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sanitizeExplanationHtml } from "@/lib/sanitizeHtml";
 import type { ChallengeStatus, MediaType, QuestionOption, QuestionType } from "@/lib/types";
 
 async function requireAdmin() {
@@ -87,7 +88,7 @@ export async function createChallenge(input: NewChallengeInput): Promise<ActionR
     correct_option_id: q.correct_option_id,
     accepted_answers: q.accepted_answers,
     difficulty: q.difficulty,
-    explanation: q.explanation.trim() || null,
+    explanation: sanitizeExplanationHtml(q.explanation) || null,
     category_id: q.category_id,
     explanation_media_url: q.explanation_media_url,
     explanation_media_type: q.explanation_media_type,
@@ -194,5 +195,169 @@ export async function addCategory(_prevState: ActionResult, formData: FormData):
 
   revalidatePath("/admin/categories");
   revalidatePath("/admin/challenges/new");
+  return {};
+}
+
+export interface ChallengeDetailsInput {
+  title: string;
+  vignette: string;
+  media_url: string | null;
+  media_type: MediaType | null;
+  category_id: string | null;
+}
+
+export async function updateChallengeDetails(
+  challengeId: string,
+  input: ChallengeDetailsInput
+): Promise<ActionResult> {
+  const { supabase, user, isAdmin } = await requireAdmin();
+  if (!user || !isAdmin) return { error: "Admins only." };
+
+  if (!input.title.trim() || !input.vignette.trim()) {
+    return { error: "Title and vignette are required." };
+  }
+
+  const { error } = await supabase
+    .from("challenges")
+    .update({
+      title: input.title.trim(),
+      vignette: input.vignette.trim(),
+      media_url: input.media_url,
+      media_type: input.media_type,
+      category_id: input.category_id,
+    })
+    .eq("id", challengeId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/");
+  revalidatePath("/dashboard");
+  revalidatePath(`/challenges/${challengeId}`);
+  revalidatePath(`/admin/challenges/${challengeId}/edit`);
+  return {};
+}
+
+export async function addQuestionToChallenge(
+  challengeId: string,
+  input: NewQuestionInput
+): Promise<ActionResult> {
+  const { supabase, user, isAdmin } = await requireAdmin();
+  if (!user || !isAdmin) return { error: "Admins only." };
+
+  const { count } = await supabase
+    .from("questions")
+    .select("*", { count: "exact", head: true })
+    .eq("challenge_id", challengeId);
+
+  const { error } = await supabase.from("questions").insert({
+    challenge_id: challengeId,
+    position: count ?? 0,
+    question_text: input.question_text.trim(),
+    type: input.type,
+    options: input.options,
+    correct_option_id: input.correct_option_id,
+    accepted_answers: input.accepted_answers,
+    difficulty: input.difficulty,
+    explanation: sanitizeExplanationHtml(input.explanation) || null,
+    category_id: input.category_id,
+    explanation_media_url: input.explanation_media_url,
+    explanation_media_type: input.explanation_media_type,
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/admin/challenges/${challengeId}/edit`);
+  revalidatePath(`/challenges/${challengeId}`);
+  return {};
+}
+
+export async function updateQuestion(
+  questionId: string,
+  input: NewQuestionInput
+): Promise<ActionResult> {
+  const { supabase, user, isAdmin } = await requireAdmin();
+  if (!user || !isAdmin) return { error: "Admins only." };
+
+  const { data: existing } = await supabase
+    .from("questions")
+    .select("challenge_id")
+    .eq("id", questionId)
+    .single();
+
+  const { error } = await supabase
+    .from("questions")
+    .update({
+      question_text: input.question_text.trim(),
+      type: input.type,
+      options: input.options,
+      correct_option_id: input.correct_option_id,
+      accepted_answers: input.accepted_answers,
+      difficulty: input.difficulty,
+      explanation: sanitizeExplanationHtml(input.explanation) || null,
+      category_id: input.category_id,
+      explanation_media_url: input.explanation_media_url,
+      explanation_media_type: input.explanation_media_type,
+    })
+    .eq("id", questionId);
+
+  if (error) return { error: error.message };
+
+  if (existing) {
+    revalidatePath(`/admin/challenges/${existing.challenge_id}/edit`);
+    revalidatePath(`/challenges/${existing.challenge_id}`);
+  }
+  return {};
+}
+
+export async function deleteQuestion(questionId: string): Promise<ActionResult> {
+  const { supabase, user, isAdmin } = await requireAdmin();
+  if (!user || !isAdmin) return { error: "Admins only." };
+
+  const { data: existing } = await supabase
+    .from("questions")
+    .select("challenge_id")
+    .eq("id", questionId)
+    .single();
+
+  const { error } = await supabase.from("questions").delete().eq("id", questionId);
+
+  if (error) {
+    if (error.code === "23503") {
+      return {
+        error: "Can't remove this question — one or more residents have already answered it.",
+      };
+    }
+    return { error: error.message };
+  }
+
+  if (existing) {
+    revalidatePath(`/admin/challenges/${existing.challenge_id}/edit`);
+  }
+  return {};
+}
+
+export async function setDemoChallenge(
+  challengeId: string,
+  makeDemo: boolean
+): Promise<ActionResult> {
+  const { user, isAdmin } = await requireAdmin();
+  if (!user || !isAdmin) return { error: "Admins only." };
+
+  const admin = createAdminClient();
+
+  if (makeDemo) {
+    await admin.from("challenges").update({ is_demo: false }).eq("is_demo", true);
+  }
+
+  const { error } = await admin
+    .from("challenges")
+    .update({ is_demo: makeDemo })
+    .eq("id", challengeId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/challenges");
+  revalidatePath("/");
+  revalidatePath("/demo");
   return {};
 }

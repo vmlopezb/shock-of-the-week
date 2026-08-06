@@ -38,7 +38,8 @@ export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isAuthPage = path.startsWith("/login") || path.startsWith("/register");
   const isLandingPage = path === "/";
-  const isPublicPage = isAuthPage || isLandingPage || path === "/contact";
+  const isPublicPage =
+    isAuthPage || isLandingPage || path === "/contact" || path.startsWith("/demo");
   const isAdminPage = path.startsWith("/admin");
 
   if (!user && !isPublicPage) {

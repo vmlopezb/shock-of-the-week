@@ -75,6 +75,10 @@ export default async function LandingPage() {
                   Explore the Mission
                 </a>
               </div>
+              <p className={styles.demoLink}>
+                No account yet?{" "}
+                <a href="/demo">Try a sample case first — no login needed →</a>
+              </p>
             </div>
 
             <div className={styles.heroCard} id="challenge">

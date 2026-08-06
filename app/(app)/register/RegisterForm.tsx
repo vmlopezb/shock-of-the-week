@@ -1,16 +1,25 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { registerAction, type AuthFormState } from "@/app/actions/auth";
 import type { Hospital } from "@/lib/types";
 
-const PGY_LEVELS = ["PGY-1", "PGY-2", "PGY-3", "PGY-4", "Attending/Faculty"];
+const PGY_LEVELS = [
+  "Medical Student",
+  "PGY-1",
+  "PGY-2",
+  "PGY-3",
+  "PGY-4",
+  "Attending/Faculty",
+  "Allied Health Professional",
+];
 
 const initialState: AuthFormState = {};
 
 export default function RegisterForm({ hospitals }: { hospitals: Hospital[] }) {
   const [state, formAction, pending] = useActionState(registerAction, initialState);
+  const [hospitalChoice, setHospitalChoice] = useState("");
 
   return (
     <div className="mx-auto mt-8 max-w-sm">
@@ -64,9 +73,16 @@ export default function RegisterForm({ hospitals }: { hospitals: Hospital[] }) {
           />
 
           <label className="label mt-3" htmlFor="hospital_id">
-            Hospital
+            Hospital / Institution
           </label>
-          <select id="hospital_id" name="hospital_id" className="input" required defaultValue="">
+          <select
+            id="hospital_id"
+            name="hospital_id"
+            className="input"
+            required
+            value={hospitalChoice}
+            onChange={(e) => setHospitalChoice(e.target.value)}
+          >
             <option value="" disabled>
               Select your hospital
             </option>
@@ -75,10 +91,20 @@ export default function RegisterForm({ hospitals }: { hospitals: Hospital[] }) {
                 {h.name}
               </option>
             ))}
+            <option value="other">Other — not listed</option>
           </select>
 
+          {hospitalChoice === "other" ? (
+            <input
+              name="other_institution"
+              className="input"
+              placeholder="Type your institution's name"
+              required
+            />
+          ) : null}
+
           <label className="label mt-3" htmlFor="pgy_level">
-            PGY Level
+            Level / Role
           </label>
           <select id="pgy_level" name="pgy_level" className="input" required defaultValue="">
             <option value="" disabled>
