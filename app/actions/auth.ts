@@ -2,10 +2,14 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getResendClient, getEmailFrom } from "@/lib/resend";
+import { usernameRecoveryEmail } from "@/lib/emailTemplates";
 import type { PgyLevel } from "@/lib/types";
 
 export interface AuthFormState {
   error?: string;
+  success?: string;
 }
 
 const PGY_LEVELS: PgyLevel[] = [
@@ -122,4 +126,120 @@ export async function logoutAction() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+export async function forgotPasswordAction(
+  _prevState: AuthFormState,
+  formData: FormData
+): Promise<AuthFormState> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) {
+    return { error: "Enter your email address." };
+  }
+
+  const supabase = await createClient();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://shockoftheweek.com";
+
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${siteUrl}/auth/confirm?next=/reset-password`,
+  });
+
+  // Always the same message whether or not the email is registered - avoids
+  // leaking which emails have accounts (same reasoning as the login error).
+  return {
+    success: "If an account exists with that email, a password reset link is on its way.",
+  };
+}
+
+export async function resetPasswordAction(
+  _prevState: AuthFormState,
+  formData: FormData
+): Promise<AuthFormState> {
+  const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirm_password") ?? "");
+
+  if (password.length < 6) {
+    return { error: "Password must be at least 6 characters." };
+  }
+  if (password !== confirmPassword) {
+    return { error: "Passwords don't match." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "This reset link has expired. Request a new one." };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    return { error: error.message };
+  }
+
+  redirect("/dashboard");
+}
+
+const GENERIC_FORGOT_USERNAME_MESSAGE =
+  "If an account exists with that email, we've sent the username to it.";
+
+export async function forgotUsernameAction(
+  _prevState: AuthFormState,
+  formData: FormData
+): Promise<AuthFormState> {
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
+  if (!email) {
+    return { error: "Enter your email address." };
+  }
+
+  // Same non-enumeration reasoning as login/forgot-password: this always
+  // returns the same message, whether or not the email matches an account,
+  // so a visitor can't use this form to probe which emails are registered.
+  try {
+    const admin = createAdminClient();
+
+    let matchedUserId: string | null = null;
+    let page = 1;
+    const perPage = 1000;
+    for (;;) {
+      const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+      if (error || !data) break;
+      const match = data.users.find((u) => u.email?.toLowerCase() === email);
+      if (match) {
+        matchedUserId = match.id;
+        break;
+      }
+      if (data.users.length < perPage) break;
+      page++;
+    }
+
+    if (matchedUserId) {
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("username")
+        .eq("id", matchedUserId)
+        .single();
+
+      if (profile?.username) {
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://shockoftheweek.com";
+        const { subject, html } = usernameRecoveryEmail(profile.username, siteUrl);
+        const resend = getResendClient();
+        await resend.emails.send({
+          from: getEmailFrom(),
+          to: email,
+          subject,
+          html,
+        });
+      }
+    }
+  } catch {
+    // Swallow errors (including "Resend not configured") - the response
+    // must stay identical either way, and this is best-effort delivery.
+  }
+
+  return { success: GENERIC_FORGOT_USERNAME_MESSAGE };
 }

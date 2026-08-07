@@ -1,10 +1,21 @@
 "use client";
 
-import { useActionState } from "react";
+import { Suspense, useActionState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { loginAction, type AuthFormState } from "@/app/actions/auth";
 
 const initialState: AuthFormState = {};
+
+function LinkExpiredNotice() {
+  const searchParams = useSearchParams();
+  if (searchParams.get("error") !== "invalid_or_expired_link") return null;
+  return (
+    <p className="mb-4 text-sm text-brand-600">
+      That link has expired or was already used. Request a new one below.
+    </p>
+  );
+}
 
 export default function LoginPage() {
   const [state, formAction, pending] = useActionState(loginAction, initialState);
@@ -16,6 +27,10 @@ export default function LoginPage() {
         <p className="mb-6 text-center text-sm text-gray-500">
           Master EKG interpretation
         </p>
+
+        <Suspense fallback={null}>
+          <LinkExpiredNotice />
+        </Suspense>
 
         <form action={formAction} className="space-y-1">
           <label className="label" htmlFor="username">
@@ -51,6 +66,16 @@ export default function LoginPage() {
             {pending ? "Logging in..." : "Log in"}
           </button>
         </form>
+
+        <div className="mt-4 flex justify-center gap-3 text-sm text-gray-500">
+          <Link href="/forgot-password" className="font-medium text-brand-600">
+            Forgot password?
+          </Link>
+          <span>·</span>
+          <Link href="/forgot-username" className="font-medium text-brand-600">
+            Forgot username?
+          </Link>
+        </div>
 
         <p className="mt-4 text-center text-sm text-gray-500">
           New here?{" "}

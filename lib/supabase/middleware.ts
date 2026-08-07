@@ -37,14 +37,19 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
-  // API routes handle their own auth (e.g. the cron endpoints check
-  // CRON_SECRET) - they're never invoked with a browser session, so the
-  // page-level redirect logic below doesn't apply to them.
-  if (path.startsWith("/api/")) {
+  // API routes and the auth token-exchange handler manage their own auth
+  // flow (CRON_SECRET check, or verifying a recovery/confirmation token) -
+  // they're reached without a normal browser session, so the page-level
+  // redirect logic below doesn't apply to them.
+  if (path.startsWith("/api/") || path.startsWith("/auth/")) {
     return supabaseResponse;
   }
 
-  const isAuthPage = path.startsWith("/login") || path.startsWith("/register");
+  const isAuthPage =
+    path.startsWith("/login") ||
+    path.startsWith("/register") ||
+    path.startsWith("/forgot-password") ||
+    path.startsWith("/forgot-username");
   const isLandingPage = path === "/";
   const isPublicPage =
     isAuthPage || isLandingPage || path === "/contact" || path.startsWith("/demo");
