@@ -36,6 +36,14 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
+
+  // API routes handle their own auth (e.g. the cron endpoints check
+  // CRON_SECRET) - they're never invoked with a browser session, so the
+  // page-level redirect logic below doesn't apply to them.
+  if (path.startsWith("/api/")) {
+    return supabaseResponse;
+  }
+
   const isAuthPage = path.startsWith("/login") || path.startsWith("/register");
   const isLandingPage = path === "/";
   const isPublicPage =

@@ -57,6 +57,7 @@ export interface Challenge {
   status: ChallengeStatus;
   publish_at: string;
   is_demo: boolean;
+  reminder_sent_at: string | null;
   created_by: string | null;
   created_at: string;
 }
