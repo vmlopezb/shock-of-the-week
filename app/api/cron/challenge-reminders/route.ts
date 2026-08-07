@@ -3,9 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getResendClient, getEmailFrom } from "@/lib/resend";
 import { challengeReminderEmail } from "@/lib/emailTemplates";
 
-// Resend caps combined to/cc/bcc recipients per send around 50 - verify
-// against current docs once the account exists; adjust if it changes.
-const BCC_CHUNK_SIZE = 50;
+// Resend's batch endpoint accepts up to 100 individual emails per call.
+const BATCH_SIZE = 100;
 
 // RFC 2606 reserved domains, meant only for documentation/testing and never
 // real mailboxes - Resend (correctly) rejects the whole send if any of these
@@ -112,17 +111,23 @@ export async function GET(request: Request) {
     const { subject, html } = challengeReminderEmail(challenge.title, siteUrl);
     let allChunksOk = true;
 
-    for (let i = 0; i < emails.length; i += BCC_CHUNK_SIZE) {
-      const chunk = emails.slice(i, i + BCC_CHUNK_SIZE);
-      // BCC (not "to") so recipients never see each other's addresses -
-      // same anonymity guarantee as the rest of the app.
-      const { error } = await resend.emails.send({
-        from: getEmailFrom(),
-        to: getEmailFrom(),
-        bcc: chunk,
-        subject,
-        html,
-      });
+    for (let i = 0; i < emails.length; i += BATCH_SIZE) {
+      const chunk = emails.slice(i, i + BATCH_SIZE);
+      // Individual emails via the batch API (each recipient gets their own
+      // message with only their own address in "to"), not one message
+      // BCC'd to everyone - Gmail's spam filters treat a generic "to" +
+      // large bcc list as a bulk-mail signature and silently drop it, which
+      // is exactly what happened when this used bcc. Sending individually
+      // also keeps the same guarantee bcc gave: no recipient ever sees
+      // another recipient's address.
+      const { error } = await resend.batch.send(
+        chunk.map((email) => ({
+          from: getEmailFrom(),
+          to: email,
+          subject,
+          html,
+        }))
+      );
       if (error) {
         allChunksOk = false;
         results.push({ challengeId: challenge.id, title: challenge.title, ok: false, error: error.message });
