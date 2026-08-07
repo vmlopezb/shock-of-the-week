@@ -13,8 +13,34 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const admin = createAdminClient();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://shockoftheweek.com";
+
+  // Test mode: ?test_email=you@example.com sends exactly one sample email to
+  // that single address and returns immediately - it never touches
+  // challenges, participant data, or reminder_sent_at. Use this to verify
+  // Resend/domain setup before letting the real job run against everyone.
+  const testEmail = new URL(request.url).searchParams.get("test_email");
+  if (testEmail) {
+    let resendTest;
+    try {
+      resendTest = getResendClient();
+    } catch {
+      return NextResponse.json({ error: "RESEND_API_KEY is not configured yet." }, { status: 500 });
+    }
+    const { subject, html } = challengeReminderEmail("Sample Test Challenge", siteUrl);
+    const { data, error } = await resendTest.emails.send({
+      from: getEmailFrom(),
+      to: testEmail,
+      subject: `[TEST] ${subject}`,
+      html,
+    });
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json({ testSentTo: testEmail, id: data?.id });
+  }
+
+  const admin = createAdminClient();
 
   const { data: challenges, error: challengesError } = await admin
     .from("challenges")
