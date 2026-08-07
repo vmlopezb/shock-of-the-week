@@ -7,6 +7,17 @@ import { challengeReminderEmail } from "@/lib/emailTemplates";
 // against current docs once the account exists; adjust if it changes.
 const BCC_CHUNK_SIZE = 50;
 
+// RFC 2606 reserved domains, meant only for documentation/testing and never
+// real mailboxes - Resend (correctly) rejects the whole send if any of these
+// show up in the recipient list, so filter them out defensively rather than
+// letting one stray test account block delivery to everyone else.
+const RESERVED_TEST_DOMAINS = ["example.com", "example.net", "example.org", "example.edu"];
+
+function isRealRecipient(email: string): boolean {
+  const domain = email.split("@")[1]?.toLowerCase();
+  return !!domain && !RESERVED_TEST_DOMAINS.includes(domain);
+}
+
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
   if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -78,7 +89,7 @@ export async function GET(request: Request) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
     if (error || !data) break;
     for (const u of data.users) {
-      if (u.email && participantIds.has(u.id)) emails.push(u.email);
+      if (u.email && participantIds.has(u.id) && isRealRecipient(u.email)) emails.push(u.email);
     }
     if (data.users.length < perPage) break;
     page++;
